@@ -1,0 +1,17 @@
+---
+#************************************************************************************
+# Install Zabbix Client
+# Tasks for the install of Zabbix. Use a block so that we can tag all of these tasks.
+#************************************************************************************
+- block:
+
+    - name: Load Zabbix secret configuration variables
+      ansible.builtin.include_vars:
+        file: zabbix_secret.yml
+
+    - name: Deploy Zabbix Agent
+      ansible.builtin.include_role:
+        name: community.zabbix.zabbix_agent
+    
+  tags: zabbix_client 
+

@@ -1,0 +1,9 @@
+---
+ansible-navigator:
+  #  execution-environment:
+  #    #image: registry.redhat.io/ee-supported-rhel8:latest
+  #    image: ansible-automation-platform-22/ee-supported-rhel8
+  #    pull:
+  #      policy: missing
+  playbook-artifact:
+    enable: false

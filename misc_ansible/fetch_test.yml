@@ -1,0 +1,13 @@
+---
+- name: Use the fetch module to retrieve secure log files
+  hosts: test
+  remote_user: ansible
+  become: true
+
+  tasks:
+    - name: Fetch the /var/log/secure log file from managed hosts
+      ansible.builtin.fetch:
+        src: /var/log/secure
+        dest: simondir
+        flat: no
+

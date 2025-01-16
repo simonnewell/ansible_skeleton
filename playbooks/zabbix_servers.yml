@@ -1,0 +1,24 @@
+---
+# The zabbix deployment requires refactoring.
+
+- name: Test deploy_zabbix variable
+  hosts: core
+  become: true
+  gather_facts: true
+  vars:
+    debug_level: 5
+
+  collections:
+    - community.mysql
+    - community.zabbix
+
+  tasks:
+    - name: Debug deploy_zabbix value
+      ansible.builtin.debug:
+        var: deploy_zabbix_client
+
+    - name: Include Zabbix playbook if deploy_zabbix is true
+      include_tasks: deploy_zabbix_client.yml
+      tags: zabbix_client
+      when: deploy_zabbix_client is defined and deploy_zabbix_client | bool == true
+

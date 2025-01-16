@@ -1,0 +1,174 @@
+---
+#************************************************************************************
+# Install Zabbix Server and Web
+# Tasks for the install of Zabbix. Use a block so that we can tag all of these tasks.
+#************************************************************************************
+- block:
+
+    - name: Load Zabbix secret configuration variables
+      ansible.builtin.include_vars:
+        file: zabbix_secret.yml
+
+    - name: Debug-Show creds- zabbix_server_dbuser
+      ansible.builtin.debug:
+        var: zabbix_server_dbuser
+
+    - name: Show more info
+      ansible.builtin.debug:
+        msg: |
+          zabbix_server_dbhost={{ zabbix_server_dbhost }}
+          zabbix_server_dbport={{ zabbix_server_dbport }}
+          zabbix_server_dbuser={{ zabbix_server_dbuser }}
+          zabbix_server_dbpassword={{ zabbix_server_dbpassword }}
+
+
+    - name: Test database connection
+      mysql_info:
+        login_host: "{{ zabbix_server_dbhost }}"
+        login_port: "{{ zabbix_server_dbport }}"
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+
+    - name: Ensure MariaDB is Installed for Zabbix
+      ansible.builtin.apt:
+        name: mariadb-server
+        state: present
+
+    - name: Start and Enable MariaDB
+      ansible.builtin.systemd:
+        name: mariadb
+        state: started
+        enabled: true
+
+    - name: Check if MariaDB root password is set
+      ansible.builtin.command: "mysqladmin -u root -p{{ mariadb_root_password }} status"
+      register: root_password_check
+      ignore_errors: true
+
+    - name: Set MariaDB root password if not set
+      community.mysql.mysql_user:
+        name: root
+        host: localhost
+        password: "{{ mariadb_root_password }}"
+        state: present
+        priv: "*.*:ALL,GRANT"
+      when: root_password_check.rc != 0
+
+    #*****************************************************
+    # Nasty workarounds :(
+    # The zabbix comminity roles have issues.
+    #*****************************************************
+    - name: Ensure the Zabbix schema directory symlink exists
+      ansible.builtin.file:
+        src: /usr/share/zabbix/sql-scripts
+        dest: /usr/share/zabbix-sql-scripts
+        state: link
+    
+    # Ignore errors for when this is run more than once.
+    - name: Manually import Zabbix SQL schema
+      ansible.builtin.shell: |
+        "zcat /usr/share/zabbix/sql-scripts/mysql/server.sql.gz | mysql -u {{ zabbix_server_dbuser }} -p'{{ zabbix_server_dbpassword }}' {{ zabbix_server_dbname }}"
+      args:
+        warn: false   # Suppress warnings
+      ignore_errors: yes
+    
+    # *** END WORKAROUND ************************************
+    
+    # Deploy Zabbix Server
+    - name: Deploy Zabbix Server
+      vars:
+        zabbix_server_sql_path: /usr/share/zabbix/sql-scripts/mysql/server.sql.gz
+        zabbix_server_dbschema: /usr/share/zabbix/sql-scripts/mysql/server.sql.gz
+      ansible.builtin.include_role:
+        name: community.zabbix.zabbix_server
+    
+    # *** START WORKAROUND ************************************
+    - name: Ensure DejaVu fonts are installed
+      ansible.builtin.apt:
+        name: fonts-dejavu-core
+        state: present
+      when: ansible_facts['os_family'] == 'Debian'
+    
+    - name: Locate and create DejaVu font link
+      block:
+        - name: Ensure /usr/share/zabbix/fonts directory exists
+          ansible.builtin.file:
+            path: /usr/share/zabbix/fonts
+            state: directory
+            mode: '0755'
+          become: true
+    
+        - name: Ensure graphfont.ttf symlink exists
+          ansible.builtin.file:
+            src: /usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+            dest: /usr/share/zabbix/fonts/graphfont.ttf
+            state: link
+          become: true
+      rescue:
+        - name: Print debug info if font is missing
+          ansible.builtin.debug:
+            msg: "DejaVuSans.ttf not found in the expected location. Verify font installation."
+    
+    - name: Install PHP 8.2 and PHP-FPM
+      ansible.builtin.apt:
+        name: php8.2-fpm
+        state: present
+      become: true
+      when: ansible_facts['os_family'] == 'Debian'
+    
+        #- name: Ensure PHP-FPM pool directory exists
+        #  ansible.builtin.file:
+        #    path: /etc/php/8.2/fpm/pool.d
+        #    state: directory
+        #    mode: '0755'
+        #  become: true
+        #  when: ansible_facts['os_family'] == 'Debian'
+        #
+    # *** END WORKAROUND ************************************
+    
+        
+    # Deploy Zabbix Web
+    - name: Deploy Zabbix Web
+      ansible.builtin.include_role:
+        name: community.zabbix.zabbix_web
+    
+    
+    # *** START WORKAROUND ************************************
+    
+    - name: Enable required Apache modules
+      ansible.builtin.command: a2enmod {{ item }}
+      loop:
+        - rewrite
+        #- php
+        - proxy
+        - headers
+      become: true
+    
+    - name: Ensure en_US.UTF-8 locale is enabled
+      ansible.builtin.lineinfile:
+        path: /etc/locale.gen
+        regexp: '^#?en_US.UTF-8 UTF-8'
+        line: 'en_US.UTF-8 UTF-8'
+        state: present
+      become: true
+    
+    - name: Regenerate locales
+      ansible.builtin.command: locale-gen
+      become: true
+    
+    - name: Set default locale to en_US.UTF-8
+      ansible.builtin.lineinfile:
+        path: /etc/default/locale
+        regexp: '^LANG='
+        line: 'LANG=en_US.UTF-8'
+      become: true
+    
+    - name: Restart Apache
+      ansible.builtin.service:
+        name: apache2
+        state: restarted
+      become: true
+    # *** WORKAROUND ************************************
+    
+  tags: zabbix 
+

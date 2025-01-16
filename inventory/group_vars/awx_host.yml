@@ -1,0 +1,74 @@
+---
+#*************************************************************************
+# Group_Vars used mainly by various roles
+#*************************************************************************
+
+#**************************************
+# Groups
+#**************************************
+strict_gid: true   # Enforce group definitions in the role
+my_groups:
+  #- not needed
+
+#**************************************
+# Accounts
+#**************************************
+my_accounts:
+  - name: awx
+
+#**************************************
+# Public SSH Keys
+#**************************************
+my_keys_to_deploy:
+
+
+#**************************************
+# Manage Packages
+#**************************************
+my_packages_install:
+  - telnet
+  - nfs-utils
+  - binutils
+  - traceroute
+
+my_packages_uninstall:
+
+my_packages_enable_repo:
+
+#**************************************
+# motd
+#**************************************
+motd_template: motd01.j2
+
+#**************************************
+# resolver
+#**************************************
+my_resolver: mainchain
+
+#**************************************
+# Services
+#**************************************
+my_services_enable:
+my_services_disable:
+my_services_start:
+my_services_stop:
+
+#**************************************
+# sysctl.conf
+#**************************************
+
+#**************************************
+# SCAP Reporting
+#**************************************
+scap_report: false
+scap_report_dir: "scap_reports"
+
+# Get profiles using cmd: oscap info /usr/share/xml/scap/ssg/content/ssg-rhel9-ds.xml
+# CIS Red Hat Enterprise Linux 9 Benchmark for Level 1 - Server
+scap_profile: "xccdf_org.ssgproject.content_profile_cis_server_l1"
+
+# CIS Red Hat Enterprise Linux 9 Benchmark for Level 2 - Server
+#scap_profile: "xccdf_org.ssgproject.content_profile_cis"
+
+
+

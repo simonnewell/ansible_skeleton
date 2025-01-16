@@ -1,0 +1,35 @@
+---
+#*************************************************************************
+# Group_Vars for zabbix
+#*************************************************************************
+
+#**************************************
+# Accounts
+#**************************************
+my_accounts:
+  - name: zabbix_server
+  - name: zabbix
+
+#**************************************
+# Zabbix
+#**************************************
+
+# Zabbix Server Role
+zabbix_server_name: lonawx01
+zabbix_server_database: mysql
+zabbix_server_database_long: mysql
+zabbix_server_dbhost: localhost
+zabbix_server_dbport: 3306
+zabbix_server_dbuser: zabbix
+#zabbix_server_dbpassword: password     # In zabbix_secret.yml
+zabbix_server_dbname: zabbix
+
+
+# Zabbix Web Role
+zabbix_api_server_url: 
+zabbix_web_http_server: apache
+zabbix_timezone: Europe/London
+
+# Zabbix Agent
+zabbix_agent2: true
+zabbix_agent_server: 

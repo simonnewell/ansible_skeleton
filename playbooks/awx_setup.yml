@@ -1,0 +1,26 @@
+---
+- name: Main project playbook(s)
+  hosts: awx_host
+  gather_facts: true
+  vars:
+    debug_level: 5
+
+  roles: 
+    - role: create_accounts
+      vars:
+        strict_gid: true
+      tags: create_accounts
+
+    - role: manage_motd
+      tags: motd
+
+    - role: manage_packages
+      tags: packages
+
+    - role: awx_setup
+      tags: awx
+
+    # Execute if scap_report var is true
+    - role: scap_report
+      tags: scap_report
+
